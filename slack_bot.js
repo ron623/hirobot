@@ -25,8 +25,8 @@ This bot demonstrates many of the core features of Botkit:
 
   Run your bot from the command line:
 
-    token=<MY TOKEN> node slack_bot.js
-
+   # token=<MY TOKEN> node bot.js
+   
 # USE THE BOT:
 
   Find your bot inside Slack to send it a direct message.
@@ -37,7 +37,7 @@ This bot demonstrates many of the core features of Botkit:
 
   Say: "who are you?"
 
-  The bot will tell you its name, where it is running, and for how long.
+  The bot will tell you its name, where it running, and for how long.
 
   Say: "Call me <nickname>"
 
@@ -61,23 +61,29 @@ This bot demonstrates many of the core features of Botkit:
 
     -> http://howdy.ai/botkit
 
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+var SLACK_TOKEN ='xoxb-31951615347-LtGPlWzxloIeGez3RtzbagwA'
+
+/*
 
 if (!process.env.token) {
     console.log('Error: Specify token in environment');
     process.exit(1);
 }
+*/
 
 var Botkit = require('./lib/Botkit.js');
 var os = require('os');
 
 var controller = Botkit.slackbot({
-    debug: true
+    debug: true,
 });
 
 var bot = controller.spawn({
-    token: process.env.token
+//    token: process.env.token
+    token: SLACK_TOKEN
 }).startRTM();
 
 
@@ -227,6 +233,7 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
 
     });
 
+
 function formatUptime(uptime) {
     var unit = 'second';
     if (uptime > 60) {
@@ -244,3 +251,129 @@ function formatUptime(uptime) {
     uptime = uptime + ' ' + unit;
     return uptime;
 }
+
+controller.hears(['double (.*)'],'direct_mention',function(bot, message) {
+    var matches = message.text.match(/double (.*)/i);
+    var msg = matches[1];
+    bot.reply(message,msg+' '+msg);
+});
+
+controller.hears(['(.*)emoji(.*)'],'message_received,message_received,direct_message,direct_mention,mention',function(bot, message) {
+    bot.replyWithTyping(message, '' + getRandomSmileEmoji());
+});
+
+function getRandomSmileEmoji(){
+    var emojiArray = [
+        ':grinning:',
+        ':gokijet:',
+        ':saitou:',
+        ':grimacing:',
+        ':grin:',
+        ':roach_sleep:',
+        ':smiley:',
+        ':smile:',
+        ':roach_thief:',
+        ':laughing:',
+        ':yoshio:',
+        ':wink:'
+    ];
+    var random = Math.floor(Math.random() * emojiArray.length);
+    return emojiArray[random];
+}
+
+controller.hears(['(.*)google(.*)'],'message_received,direct_message,direct_mention,mention',function(bot, message) {
+    bot.replyWithTyping(message, '' + getUrl('GOOGLE'));
+});
+controller.hears(['(.*)yahoo(.*)'],'message_received,direct_message,direct_mention,mention',function(bot, message) {
+    bot.replyWithTyping(message, '' + getUrl('YAHOO'));
+});
+controller.hears(['(.*)news(.*)'],'message_received,direct_message,direct_mention,mention',function(bot, message) {
+    bot.replyWithTyping(message, 'news within 1 hour: ' + getUrl('NEWS'));
+});
+controller.hears(['(.*)norikae(.*)'],'message_received,direct_message,direct_mention,mention',function(bot, message) {
+    bot.replyWithTyping(message, '' + getUrl('NORIKAE'));
+});
+
+function getUrl(urlStr){
+    if (urlStr == 'GOOGLE'){
+     url = 'https://www.google.co.jp/';
+     return url;
+    }
+    if (urlStr == 'YAHOO'){
+     url = 'http://www.yahoo.co.jp/';
+     return url;
+    }
+    if (urlStr == 'NEWS'){
+     url = 'https://www.google.co.jp/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9&safe=off&tbs=qdr:h';
+     return url;
+    }
+    if (urlStr == 'NORIKAE'){
+     url = 'http://www.jorudan.co.jp/';
+     return url;
+    }
+}
+
+var botkit = require('botkit'),
+    request = require('superagent');
+    
+var WIKIPEDIA_URL = 'https://ja.wikipedia.org/wiki/';
+ 
+ 
+controller.spawn({
+  token: process.env.token
+}).startRTM();
+ 
+controller.hears(['wiki (.*)'], ['message_received', 'direct_message','direct_mention','mention'], function(bot, msg) {
+  // wiki xxx でうぃきぺでぃあの冒頭を拾ってくる
+  var word = msg.match[1] || msg.match[2];
+   
+  request
+    .get('https://ja.wikipedia.org/w/api.php')
+    .query({
+      format : 'json',
+      action : 'query',
+      prop   : 'extracts',
+      exintro: '',
+      explaintext: '',
+      titles : word
+    })
+    .end(function (err, res) {
+      var query = res.body.query;
+ 
+      if (query && query.pages) {
+        for (var p in query.pages) {
+          var content = query.pages[p].extract;
+ 
+          if (content) {
+            // slackで引用スタイルを適用するために`>` をつける
+            content = '> ' + content.replace(/\n/g, '\n> ');
+          }
+          else {
+            content = '見つからなかった';
+          }
+ 
+          bot.reply(msg, [
+              content,
+              WIKIPEDIA_URL + word
+          ].join('\r\n'));
+          return;
+        }
+      }
+    });
+});
+
+controller.hears(['nemui','zzz'],'message_received,message_received,direct_message,direct_mention,mention',function(bot, message) {
+    bot.replyWithTyping(message, '' + getRandomSmileEmoji());
+});
+
+function getRandomSmileEmoji(){
+    var emojiArray = [
+        ':sleeping:',
+        ':sleepy:',
+        ':roach_sleep:',
+        ':frog_sleep:',
+    ];
+    var random = Math.floor(Math.random() * emojiArray.length);
+    return emojiArray[random];
+}
+
